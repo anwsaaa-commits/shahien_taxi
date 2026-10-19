@@ -33,7 +33,7 @@ jobs:
         run: |
           flutter clean
           flutter pub get
-
+          flutter pub run flutter_launcher_icons
       - name: Build APK (Debug Mode)
         run: flutter build apk --debug --no-tree-shake-icons
 
