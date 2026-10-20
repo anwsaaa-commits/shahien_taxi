@@ -25,16 +25,15 @@ jobs:
           flutter-version: "3.19.6"
           channel: "stable"
 
-      - name: Initialize Flutter Project
+      - name: Get Dependencies
         run: |
-          flutter create . --org com.shahien.taxi --project-name shahien_taxi
-          sed -i '1s/^/buildscript { ext.kotlin_version = "1.8.20" }\n/' android/build.gradle
-
-      - name: Clean and Install Dependencies
-        run: |
-          flutter clean
           flutter pub get
           flutter pub run flutter_launcher_icons
+
+      - name: Fix Kotlin Version
+        run: |
+          find android -name "build.gradle" -exec sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.8.20"/g' {} +
+          find android -name "build.gradle" -exec sed -i 's/kotlinVersion = .*/kotlinVersion = "1.8.20"/g' {} +
 
       - name: Build APK (Debug Mode)
         run: flutter build apk --debug --no-tree-shake-icons
