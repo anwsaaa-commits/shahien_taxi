@@ -25,10 +25,12 @@ jobs:
           flutter-version: "3.19.6"
           channel: "stable"
 
-      - name: Initialize & Setup Android
+      - name: Create Project & Force Kotlin 1.9.0
         run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi
-          sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.8.20"/g' android/build.gradle || true
+          # كتابة إعدادات الكوتلن الصحيحة مباشرة في ملف build.gradle الرئيسي
+          echo "buildscript { ext.kotlin_version = '1.9.0' }" > android/build.gradle
+          echo "allprojects { repositories { google(); mavenCentral() } }" >> android/build.gradle
 
       - name: Get Dependencies
         run: |
