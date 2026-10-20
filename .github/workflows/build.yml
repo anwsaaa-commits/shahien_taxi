@@ -27,8 +27,6 @@ jobs:
 
       - name: Initialize Flutter Project
         run: |
-               - name: Initialize Flutter Project
-        run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi
           sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.8.20"/' android/build.gradle
 
@@ -37,6 +35,7 @@ jobs:
           flutter clean
           flutter pub get
           flutter pub run flutter_launcher_icons
+
       - name: Build APK (Debug Mode)
         run: flutter build apk --debug --no-tree-shake-icons
 
