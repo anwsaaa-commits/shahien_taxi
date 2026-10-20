@@ -22,25 +22,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.22.2"
+          flutter-version: "3.19.6"
           channel: "stable"
 
       - name: Create Project Structure
         run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi --no-pub
 
-      - name: Inject Kotlin Version
+      - name: Upgrade Gradle and Kotlin Version
         run: |
-          python3 -c "
-          import os
-          path = 'android/build.gradle'
-          if os.path.exists(path):
-              with open(path, 'r') as f:
-                  content = f.read()
-              new_content = 'buildscript {\n    ext.kotlin_version = \"1.9.0\"\n}\n' + content
-              with open(path, 'w') as f:
-                  f.write(new_content)
-          "
+          sed -i 's/1.7.10/1.8.22/g' android/build.gradle || true
+          sed -i 's/1.7.1/1.8.22/g' android/build.gradle || true
+          sed -i 's/7.3.0/7.4.2/g' android/build.gradle || true
+          sed -i 's/1.7.10/1.8.22/g' android/settings.gradle || true
+          sed -i 's/1.7.1/1.8.22/g' android/settings.gradle || true
 
       - name: Get Dependencies
         run: |
