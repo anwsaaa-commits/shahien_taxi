@@ -28,7 +28,12 @@ jobs:
       - name: Initialize Flutter Project
         run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi
-          sed -i 's/kotlin_version = .*/kotlin_version = "1.9.0"/g' android/build.gradle || true
+          python3 -c "
+          path = 'android/build.gradle'
+          with open(path, 'r') as f: content = f.read()
+          content = 'buildscript {\n    ext.kotlin_version = \"1.8.20\"\n}\n' + content
+          with open(path, 'w') as f: f.write(content)
+          "
 
       - name: Clean and Install Dependencies
         run: |
