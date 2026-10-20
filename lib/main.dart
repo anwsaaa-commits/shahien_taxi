@@ -19,7 +19,7 @@ class ShahienTaxiApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.light,
         primaryColor: const Color(0xFFFFB703),
-        scaffoldBackgroundColor: const Color(0xFFFFC300), // خلفية صفراء مميزة
+        scaffoldBackgroundColor: const Color(0xFFFFC300),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFFFB703),
           foregroundColor: Colors.black,
@@ -31,9 +31,6 @@ class ShahienTaxiApp extends StatelessWidget {
   }
 }
 
-// -------------------------------------------------------------
-// 1. شاشة تسجيل الدخول برقم الجوال (معالجة الشاشة للوحة المفاتيح)
-// -------------------------------------------------------------
 class PhoneAuthScreen extends StatefulWidget {
   const PhoneAuthScreen({super.key});
 
@@ -203,9 +200,6 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 }
 
-// -------------------------------------------------------------
-// 2. الواجهة الرئيسية مع العداد الحي بالـ GPS، التوقف والاستئناف، والتخزين
-// -------------------------------------------------------------
 class TaxiHomeScreen extends StatefulWidget {
   const TaxiHomeScreen({super.key});
 
@@ -236,7 +230,6 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
     _loadSavedData();
   }
 
-  // تحميل البيانات المحفوظة تلقائياً
   Future<void> _loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -245,14 +238,12 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
     });
   }
 
-  // حفظ البيانات دائمياً
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('total_earnings', _totalEarnings);
     await prefs.setStringList('trip_history', _tripHistoryList);
   }
 
-  // بدء العداد وحساب المسافة بالـ GPS الفعلي
   Future<void> _startTrip() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -267,7 +258,7 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
     setState(() {
       _isTripActive = true;
       _isPaused = false;
-      _fare = 500.0; // فتحة العداد
+      _fare = 500.0;
       _distanceKm = 0.0;
       _elapsedSeconds = 0;
       _lastPosition = null;
@@ -281,7 +272,6 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
       }
     });
 
-    // تتبع الحركة الفعلية بالـ GPS
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -298,7 +288,7 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
           );
           setState(() {
             _distanceKm += (distanceInMeters / 1000.0);
-            _fare += (distanceInMeters / 1000.0) * 300; // 300 ريال لكل كم
+            _fare += (distanceInMeters / 1000.0) * 300;
           });
         }
         _lastPosition = position;
@@ -584,7 +574,7 @@ class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
               ? const Center(
                   child: Text(
                     'لا توجد رحلات محفوظة حتى الآن',
-                    style: TextStyle(color: Colors.black80, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 )
               : ListView.builder(
