@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
   runApp(const ShahienTaxiApp());
 }
 
@@ -14,185 +13,132 @@ class ShahienTaxiApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'تكسي الشاهين',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: const Color(0xFFFFB703),
-        scaffoldBackgroundColor: const Color(0xFFFFC300),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFFFB703),
-          foregroundColor: Colors.black,
-          elevation: 2,
-        ),
+        primarySwatch: Colors.amber,
+        scaffoldBackgroundColor: const Color(0xFFFFC107),
+        fontFamily: 'Roboto',
       ),
-      home: const PhoneAuthScreen(),
+      home: const AuthScreen(),
     );
   }
 }
 
-class PhoneAuthScreen extends StatefulWidget {
-  const PhoneAuthScreen({super.key});
+// شاشة الدخول
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
+class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
-  bool _isCodeSent = false;
+  bool _codeSent = false;
+
+  void _submit() {
+    if (!_codeSent) {
+      if (_phoneController.text.trim().isNotEmpty) {
+        setState(() => _codeSent = true);
+      }
+    } else {
+      if (_otpController.text.trim() == "123456" || _otpController.text.trim().isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFC300),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E222A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.local_taxi, size: 80, color: Color(0xFFFFC107)),
               ),
-              color: const Color(0xFF1E252B),
-              elevation: 8,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(
-                      Icons.local_taxi_rounded,
-                      size: 80,
-                      color: Color(0xFFFFB703),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'تكسي الشاهين',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isCodeSent
-                          ? 'أدخل رمز التحقق (OTP) المرسل لجوّالك'
-                          : 'أدخل رقم جوالك لتأكيد الهوية والدخول',
-                      style: const TextStyle(color: Colors.grey, fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    if (!_isCodeSent) ...[
-                      TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: Colors.white, fontSize: 18),
-                        decoration: InputDecoration(
-                          labelText: 'رقم الجوال',
-                          labelStyle: const TextStyle(color: Color(0xFFFFB703)),
-                          hintText: '770000000',
-                          prefixIcon: const Icon(Icons.phone, color: Color(0xFFFFB703)),
-                          filled: true,
-                          fillColor: const Color(0xFF12161A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
+              const SizedBox(height: 24),
+              const Text(
+                'تكسي الشاهين',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E222A)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _codeSent ? 'أدخل رمز التحقق (123456)' : 'أدخل رقم الجوال للبدء',
+                style: const TextStyle(fontSize: 16, color: Colors.black80),
+              ),
+              const SizedBox(height: 32),
+              Card(
+                color: const Color(0xFF1E222A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      if (!_codeSent)
+                        TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'رقم الجوال',
+                            labelStyle: TextStyle(color: Colors.amber),
+                            prefixIcon: Icon(Icons.phone, color: Colors.amber),
+                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.amber)),
+                          ),
+                        )
+                      else
+                        TextField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 4),
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            hintText: '123456',
+                            hintStyle: TextStyle(color: Colors.white38),
+                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.amber)),
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFC107),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _submit,
+                          child: Text(
+                            _codeSent ? 'تأكيد الكود والدخول' : 'إرسال رمز التحقق',
+                            style: const TextStyle(color: Color(0xFF1E222A), fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_phoneController.text.trim().isNotEmpty) {
-                            setState(() {
-                              _isCodeSent = true;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB703),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'إرسال كود التحقق',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ] else ...[
-                      TextField(
-                        controller: _otpController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 24, letterSpacing: 8),
-                        decoration: InputDecoration(
-                          labelText: 'رمز التأكيد',
-                          labelStyle: const TextStyle(color: Color(0xFFFFB703)),
-                          hintText: '123456',
-                          filled: true,
-                          fillColor: const Color(0xFF12161A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_otpController.text.trim().length >= 4) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const TaxiHomeScreen()),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('يرجى إدخال كود تحقق صحيح مكون من 4 إلى 6 أرقام'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFB703),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'تأكيد الكود والدخول',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isCodeSent = false;
-                          });
-                        },
-                        child: const Text(
-                          'تعديل رقم الجوال',
-                          style: TextStyle(color: Color(0xFFFFB703)),
-                        ),
-                      ),
+                      if (_codeSent)
+                        TextButton(
+                          onPressed: () => setState(() => _codeSent = false),
+                          child: const Text('تعديل رقم الجوال', style: TextStyle(color: Colors.amber)),
+                        )
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -200,408 +146,362 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 }
 
-class TaxiHomeScreen extends StatefulWidget {
-  const TaxiHomeScreen({super.key});
+// الشاشة الرئيسية ومقياس العداد
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<TaxiHomeScreen> createState() => _TaxiHomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _TaxiHomeScreenState extends State<TaxiHomeScreen> {
-  int _selectedNavIndex = 0;
-  bool _isOnline = true;
-  bool _isTripActive = false;
-  bool _isPaused = false;
+class _HomeScreenState extends State<HomeScreen> {
+  // إعدادات الأسعار الافتراضية
+  double baseFare = 1000.0; // فتحة العداد (ريال)
+  double perKmFare = 500.0;  // سعر الكيلو (ريال)
+  double perMinFare = 100.0; // سعر دقيقة الانتظار (ريال)
 
-  double _fare = 0.0;
-  double _distanceKm = 0.0;
-  int _elapsedSeconds = 0;
-  Timer? _tripTimer;
+  // حالة المشوار
+  bool isTripActive = false;
+  bool isPaused = false;
 
-  Position? _lastPosition;
+  double totalDistanceMeters = 0.0;
+  int elapsedSeconds = 0;
+  double currentFare = 0.0;
+
   StreamSubscription<Position>? _positionStream;
+  Timer? _tripTimer;
+  Position? _lastPosition;
 
-  List<String> _tripHistoryList = [];
-  double _totalEarnings = 0.0;
+  List<String> _tripHistory = [];
 
   @override
   void initState() {
     super.initState();
-    _loadSavedData();
+    _loadSettingsAndHistory();
   }
 
-  Future<void> _loadSavedData() async {
+  Future<void> _loadSettingsAndHistory() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _totalEarnings = prefs.getDouble('total_earnings') ?? 0.0;
-      _tripHistoryList = prefs.getStringList('trip_history') ?? [];
+      baseFare = prefs.getDouble('baseFare') ?? 1000.0;
+      perKmFare = prefs.getDouble('perKmFare') ?? 500.0;
+      perMinFare = prefs.getDouble('perMinFare') ?? 100.0;
+      _tripHistory = prefs.getStringList('tripHistory') ?? [];
     });
   }
 
-  Future<void> _saveData() async {
+  Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('total_earnings', _totalEarnings);
-    await prefs.setStringList('trip_history', _tripHistoryList);
+    await prefs.setDouble('baseFare', baseFare);
+    await prefs.setDouble('perKmFare', perKmFare);
+    await prefs.setDouble('perMinFare', perMinFare);
+  }
+
+  void _calculateFare() {
+    double distanceKm = totalDistanceMeters / 1000.0;
+    double minutes = elapsedSeconds / 60.0;
+    setState(() {
+      currentFare = baseFare + (distanceKm * perKmFare) + (minutes * perMinFare);
+    });
   }
 
   Future<void> _startTrip() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء تفعيل الـ GPS')));
+      return;
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
     }
 
     setState(() {
-      _isTripActive = true;
-      _isPaused = false;
-      _fare = 500.0;
-      _distanceKm = 0.0;
-      _elapsedSeconds = 0;
+      isTripActive = true;
+      isPaused = false;
+      totalDistanceMeters = 0.0;
+      elapsedSeconds = 0;
+      currentFare = baseFare;
       _lastPosition = null;
     });
 
     _tripTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!_isPaused) {
+      if (!isPaused) {
         setState(() {
-          _elapsedSeconds++;
+          elapsedSeconds++;
+          _calculateFare();
         });
       }
     });
 
     _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
     ).listen((Position position) {
-      if (_isTripActive && !_isPaused) {
+      if (!isPaused) {
         if (_lastPosition != null) {
-          double distanceInMeters = Geolocator.distanceBetween(
+          double dist = Geolocator.distanceBetween(
             _lastPosition!.latitude,
             _lastPosition!.longitude,
             position.latitude,
             position.longitude,
           );
-          setState(() {
-            _distanceKm += (distanceInMeters / 1000.0);
-            _fare += (distanceInMeters / 1000.0) * 300;
-          });
+          if (dist > 2.0) { // تجاهل القفزات البسيطة
+            totalDistanceMeters += dist;
+          }
         }
         _lastPosition = position;
+        _calculateFare();
       }
     });
   }
 
   void _togglePause() {
     setState(() {
-      _isPaused = !_isPaused;
+      isPaused = !isPaused;
     });
   }
 
-  void _stopAndSaveTrip() {
-    _tripTimer?.cancel();
+  Future<void> _endTrip() async {
     _positionStream?.cancel();
-
-    final double finalFare = _fare;
-    final double finalDistance = _distanceKm;
-
-    if (finalFare > 0) {
-      String tripEntry =
-          'مشوار رقم #${_tripHistoryList.length + 1} | المسافة: ${finalDistance.toStringAsFixed(1)} كم | الأجرة: ${finalFare.toStringAsFixed(0)} ريال';
-      setState(() {
-        _tripHistoryList.insert(0, tripEntry);
-        _totalEarnings += finalFare;
-        _isTripActive = false;
-        _isPaused = false;
-        _fare = 0.0;
-        _distanceKm = 0.0;
-        _elapsedSeconds = 0;
-      });
-      _saveData();
-    }
-  }
-
-  String _formatTime(int seconds) {
-    int mins = seconds ~/ 60;
-    int secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  void dispose() {
     _tripTimer?.cancel();
-    _positionStream?.cancel();
-    super.dispose();
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFC300),
-      appBar: AppBar(
-        title: Text(
-          _selectedNavIndex == 0 ? 'أبو شاهين للمشاوير' : 'سجل الرحلات والأرباح',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    double finalDistanceKm = totalDistanceMeters / 1000.0;
+    String record = "مشوار: ${finalDistanceKm.toStringAsFixed(2)} كم - المبلغ: ${currentFare.toStringAsFixed(0)} ريال - الوقت: ${(elapsedSeconds/60).toStringAsFixed(1)} د";
+
+    final prefs = await SharedPreferences.getInstance();
+    _tripHistory.insert(0, record);
+    await prefs.setStringList('tripHistory', _tripHistory);
+
+    setState(() {
+      isTripActive = false;
+      isPaused = false;
+    });
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E222A),
+        title: const Text('تم إنهاء المشوار 🏁', style: TextStyle(color: Colors.amber), textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('المسافة: ${finalDistanceKm.toStringAsFixed(2)} كم', style: const TextStyle(color: Colors.white, fontSize: 18)),
+            const SizedBox(height: 8),
+            Text('الأجرة الإجمالية: ${currentFare.toStringAsFixed(0)} ريال', style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold)),
+          ],
         ),
-        centerTitle: true,
         actions: [
-          if (_selectedNavIndex == 0)
-            Switch(
-              value: _isOnline,
-              activeColor: Colors.black,
-              onChanged: (val) {
-                setState(() {
-                  _isOnline = val;
-                });
-              },
-            ),
-        ],
-      ),
-      body: _selectedNavIndex == 0 ? _buildDashboardView() : _buildHistoryView(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedNavIndex,
-        backgroundColor: const Color(0xFF1E252B),
-        selectedItemColor: const Color(0xFFFFB703),
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedNavIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.speed_rounded),
-            label: 'العداد والمشوار',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            label: 'سجل الرحلات',
-          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('تم', style: TextStyle(color: Colors.black)),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildDashboardView() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: _isOnline ? Colors.green[800] : Colors.red[800],
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isOnline ? Icons.check_circle : Icons.offline_bolt,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _isOnline ? 'أنت الآن متاح للرحلات (أونلاين)' : 'أنت غير متاح (أوفلاين)',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E252B),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: const Color(0xFFFFB703),
-                width: 2,
+  void _openSettingsDialog() {
+    TextEditingController baseCtrl = TextEditingController(text: baseFare.toStringAsFixed(0));
+    TextEditingController kmCtrl = TextEditingController(text: perKmFare.toStringAsFixed(0));
+    TextEditingController minCtrl = TextEditingController(text: perMinFare.toStringAsFixed(0));
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E222A),
+        title: const Text('إعدادات التسعيرة ⚙️', style: TextStyle(color: Colors.amber), textAlign: TextAlign.center),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: baseCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'فتحة العداد (ريال)', labelStyle: TextStyle(color: Colors.amber)),
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isTripActive ? Icons.local_taxi : Icons.map_rounded,
-                  size: 70,
-                  color: const Color(0xFFFFB703),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _isTripActive
-                      ? (_isPaused ? 'المشوار متوقف مؤقتاً...' : 'المشوار جاري (تتبع الـ GPS)...')
-                      : 'جاهز لبدء مشوار جديد',
-                  style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                if (_isTripActive) ...[
-                  Text(
-                    '${_fare.toStringAsFixed(0)} ريال',
-                    style: const TextStyle(
-                      fontSize: 36,
-                      color: Color(0xFFFFB703),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              TextField(
+                controller: kmCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'سعر الكيلومتر (ريال)', labelStyle: TextStyle(color: Colors.amber)),
+              ),
+              TextField(
+                controller: minCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'سعر دقيقة الانتظار (ريال)', labelStyle: TextStyle(color: Colors.amber)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            onPressed: () {
+              setState(() {
+                baseFare = double.tryParse(baseCtrl.text) ?? baseFare;
+                perKmFare = double.tryParse(kmCtrl.text) ?? perKmFare;
+                perMinFare = double.tryParse(minCtrl.text) ?? perMinFare;
+              });
+              _saveSettings();
+              Navigator.pop(context);
+            },
+            child: const Text('حفظ', style: TextStyle(color: Colors.black)),
+          )
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double distanceKm = totalDistanceMeters / 1000.0;
+    int minutes = elapsedSeconds ~/ 60;
+    int seconds = elapsedSeconds % 60;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تكسي الشاهين 🦅', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFFFC107),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.black, size: 28),
+            onPressed: isTripActive ? null : _openSettingsDialog,
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // كارت العداد المباشر
+              Card(
+                color: const Color(0xFF1E222A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                elevation: 8,
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
                     children: [
-                      Column(
-                        children: [
-                          const Text('المسافة (GPS)', style: TextStyle(color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_distanceKm.toStringAsFixed(1)} كم',
-                            style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      const Text('الأجرة الحالية', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${currentFare.toStringAsFixed(0)} YER',
+                        style: const TextStyle(color: Colors.amber, fontSize: 44, fontWeight: FontWeight.bold),
                       ),
-                      Column(
+                      const Divider(color: Colors.white24, height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          const Text('الوقت', style: TextStyle(color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatTime(_elapsedSeconds),
-                            style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                          Column(
+                            children: [
+                              const Icon(Icons.speed, color: Colors.amber),
+                              const SizedBox(height: 4),
+                              Text('${distanceKm.toStringAsFixed(2)} كم', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              const Text('المسافة', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Icon(Icons.timer, color: Colors.amber),
+                              const SizedBox(height: 4),
+                              Text('$minutes:${seconds.toString().padLeft(2, '0')}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              const Text('الوقت', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_isTripActive) ...[
-                  ElevatedButton.icon(
-                    onPressed: _togglePause,
-                    icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
-                    label: Text(_isPaused ? 'استئناف المشوار' : 'إيقاف مؤقت'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isPaused ? Colors.blue[700] : Colors.orange[800],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                ElevatedButton.icon(
-                  onPressed: _isOnline
-                      ? (_isTripActive ? _stopAndSaveTrip : _startTrip)
-                      : null,
-                  icon: Icon(_isTripActive ? Icons.stop : Icons.play_arrow),
-                  label: Text(_isTripActive ? 'إنهاء المشوار وحفظ الأجرة' : 'بدء مشوار جديد'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isTripActive ? Colors.red[700] : const Color(0xFF1E252B),
-                    foregroundColor: const Color(0xFFFFB703),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistoryView() {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E252B),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFFFB703), width: 1.5),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('إجمالي أرباحك المحفوظة', style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_totalEarnings.toStringAsFixed(0)} ريال',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFFB703),
-                    ),
-                  ),
-                ],
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text('المشاوير', style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_tripHistoryList.length}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+
+              const SizedBox(height: 24),
+
+              // أزرار التحكّم بالمشوار
+              if (!isTripActive)
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E222A),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
+                    icon: const Icon(Icons.play_arrow, color: Colors.amber, size: 32),
+                    label: const Text('بدء المشوار', style: TextStyle(color: Colors.amber, fontSize: 22, fontWeight: FontWeight.bold)),
+                    onPressed: _startTrip,
                   ),
-                ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isPaused ? Colors.green : Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: Icon(isPaused ? Icons.play_arrow : Icons.pause, color: Colors.white),
+                          label: Text(isPaused ? 'استئناف' : 'إيقاف مؤقت', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                          onPressed: _togglePause,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.stop, color: Colors.white),
+                          label: const Text('إنهاء المشوار', style: TextStyle(color: Colors.white, fontSize: 16)),
+                          onPressed: _endTrip,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+              const SizedBox(height: 24),
+
+              // سجل المشاوير السابقة
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Text('سجل المشاوير اليومية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E222A))),
+              ),
+              const SizedBox(height: 8),
+
+              Expanded(
+                child: _tripHistory.isEmpty
+                    ? const Center(child: Text('لا توجد مشاوير مسجلة اليوم', style: TextStyle(color: Colors.black54)))
+                    : ListView.builder(
+                        itemCount: _tripHistory.length,
+                        itemBuilder: (ctx, idx) => Card(
+                          color: const Color(0xFF1E222A),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            leading: const Icon(Icons.history, color: Colors.amber),
+                            title: Text(_tripHistory[idx], style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
         ),
-        Expanded(
-          child: _tripHistoryList.isEmpty
-              ? const Center(
-                  child: Text(
-                    'لا توجد رحلات محفوظة حتى الآن',
-                    style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: _tripHistoryList.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemBuilder: (context, index) {
-                    return Card(
-                      color: const Color(0xFF1E252B),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: Color(0xFFFFB703),
-                          child: Icon(Icons.check, color: Colors.black),
-                        ),
-                        title: Text(
-                          _tripHistoryList[index],
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
+      ),
     );
   }
 }
