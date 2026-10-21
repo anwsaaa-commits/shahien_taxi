@@ -25,7 +25,6 @@ class ShahienTaxiApp extends StatelessWidget {
   }
 }
 
-// شاشة الدخول
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -146,7 +145,6 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-// الشاشة الرئيسية ومقياس العداد
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -155,12 +153,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // إعدادات الأسعار الافتراضية
-  double baseFare = 1000.0; // فتحة العداد (ريال)
-  double perKmFare = 500.0;  // سعر الكيلو (ريال)
-  double perMinFare = 100.0; // سعر دقيقة الانتظار (ريال)
+  double baseFare = 1000.0;
+  double perKmFare = 500.0;
+  double perMinFare = 100.0;
 
-  // حالة المشوار
   bool isTripActive = false;
   bool isPaused = false;
 
@@ -177,10 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettingsAndHistory();
+    _loadData();
   }
 
-  Future<void> _loadSettingsAndHistory() async {
+  Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       baseFare = prefs.getDouble('baseFare') ?? 1000.0;
@@ -208,7 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _startTrip() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء تفعيل الـ GPS')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء تفعيل الـ GPS')));
+      }
       return;
     }
 
@@ -237,7 +235,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      ),
     ).listen((Position position) {
       if (!isPaused) {
         if (_lastPosition != null) {
@@ -247,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
             position.latitude,
             position.longitude,
           );
-          if (dist > 2.0) { // تجاهل القفزات البسيطة
+          if (dist > 2.0) {
             totalDistanceMeters += dist;
           }
         }
@@ -268,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _tripTimer?.cancel();
 
     double finalDistanceKm = totalDistanceMeters / 1000.0;
-    String record = "مشوار: ${finalDistanceKm.toStringAsFixed(2)} كم - المبلغ: ${currentFare.toStringAsFixed(0)} ريال - الوقت: ${(elapsedSeconds/60).toStringAsFixed(1)} د";
+    String record = "مشوار: ${finalDistanceKm.toStringAsFixed(2)} كم - المبلغ: ${currentFare.toStringAsFixed(0)} ريال - الوقت: ${(elapsedSeconds ~/ 60)} د";
 
     final prefs = await SharedPreferences.getInstance();
     _tripHistory.insert(0, record);
@@ -279,28 +280,30 @@ class _HomeScreenState extends State<HomeScreen> {
       isPaused = false;
     });
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E222A),
-        title: const Text('تم إنهاء المشوار 🏁', style: TextStyle(color: Colors.amber), textAlign: TextAlign.center),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('المسافة: ${finalDistanceKm.toStringAsFixed(2)} كم', style: const TextStyle(color: Colors.white, fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('الأجرة الإجمالية: ${currentFare.toStringAsFixed(0)} ريال', style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold)),
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E222A),
+          title: const Text('تم إنهاء المشوار 🏁', style: TextStyle(color: Colors.amber), textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('المسافة: ${finalDistanceKm.toStringAsFixed(2)} كم', style: const TextStyle(color: Colors.white, fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('الأجرة الإجمالية: ${currentFare.toStringAsFixed(0)} ريال', style: const TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('تم', style: TextStyle(color: Colors.black)),
+            )
           ],
         ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            onPressed: () => Navigator.pop(context),
-            child: const Text('تم', style: TextStyle(color: Colors.black)),
-          )
-        ],
-      ),
-    );
+      );
+    }
   }
 
   void _openSettingsDialog() {
@@ -380,7 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // كارت العداد المباشر
               Card(
                 color: const Color(0xFF1E222A),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -421,10 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // أزرار التحكّم بالمشوار
               if (!isTripActive)
                 SizedBox(
                   width: double.infinity,
@@ -473,16 +472,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-
               const SizedBox(height: 24),
-
-              // سجل المشاوير السابقة
               const Align(
                 alignment: Alignment.centerRight,
                 child: Text('سجل المشاوير اليومية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E222A))),
               ),
               const SizedBox(height: 8),
-
               Expanded(
                 child: _tripHistory.isEmpty
                     ? const Center(child: Text('لا توجد مشاوير مسجلة اليوم', style: TextStyle(color: Colors.black54)))
