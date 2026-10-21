@@ -29,14 +29,6 @@ jobs:
         run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi --no-pub
 
-      - name: Upgrade Gradle and Kotlin Version
-        run: |
-          sed -i 's/1.7.10/1.8.22/g' android/build.gradle || true
-          sed -i 's/1.7.1/1.8.22/g' android/build.gradle || true
-          sed -i 's/7.3.0/7.4.2/g' android/build.gradle || true
-          sed -i 's/1.7.10/1.8.22/g' android/settings.gradle || true
-          sed -i 's/1.7.1/1.8.22/g' android/settings.gradle || true
-
       - name: Get Dependencies
         run: |
           flutter pub get
