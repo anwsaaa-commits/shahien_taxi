@@ -4,7 +4,8 @@ name: Build Shahien Taxi APK
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -30,34 +31,24 @@ jobs:
 
       - name: Generate Android project files
         run: |
-          flutter create . \
-            --org com.shahien.taxi \
-            --project-name shahien_taxi \
-            --platforms=android \
-            --no-pub
+          flutter create . --org com.shahien.taxi --project-name shahien_taxi --platforms=android --no-pub
 
       - name: Configure Kotlin version
         run: |
           if [ -f android/settings.gradle ]; then
-            sed -i "s/id ['\"]org.jetbrains.kotlin.android['\"] version ['\"][^'\"]*['\"]/id 'org.jetbrains.kotlin.android' version '1.9.24'/" android/settings.gradle
+            sed -i "s/version '1.7.10'/version '1.9.24'/" android/settings.gradle
+            sed -i 's/version "1.7.10"/version "1.9.24"/' android/settings.gradle
           fi
-
           if [ -f android/build.gradle ]; then
-            sed -i "s/ext.kotlin_version = ['\"][^'\"]*['\"]/ext.kotlin_version = '1.9.24'/" android/build.gradle
+            sed -i "s/ext.kotlin_version = '1.7.10'/ext.kotlin_version = '1.9.24'/" android/build.gradle
           fi
 
-      - name: Set Android location permissions
+      - name: Set Android permissions
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          if ! grep -q 'android.permission.INTERNET' "$MANIFEST_PATH"; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST_PATH"
-          fi
-          if ! grep -q 'android.permission.ACCESS_FINE_LOCATION' "$MANIFEST_PATH"; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' "$MANIFEST_PATH"
-          fi
-          if ! grep -q 'android.permission.ACCESS_COARSE_LOCATION' "$MANIFEST_PATH"; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' "$MANIFEST_PATH"
-          fi
+          grep -q 'android.permission.INTERNET' "$MANIFEST_PATH" || sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST_PATH"
+          grep -q 'android.permission.ACCESS_FINE_LOCATION' "$MANIFEST_PATH" || sed -i '/<manifest/a\    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' "$MANIFEST_PATH"
+          grep -q 'android.permission.ACCESS_COARSE_LOCATION' "$MANIFEST_PATH" || sed -i '/<manifest/a\    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' "$MANIFEST_PATH"
 
       - name: Get dependencies
         run: flutter pub get
