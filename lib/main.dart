@@ -76,9 +76,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E222A)),
               ),
               const SizedBox(height: 8),
-              Text(
-                _codeSent ? 'أدخل رمز التحقق (123456)' : 'أدخل رقم الجوال للبدء',
-                style: const TextStyle(fontSize: 16, color: Colors.black80),
+              const Text(
+                'أدخل رقم الجوال للبدء',
+                style: TextStyle(fontSize: 16, color: Colors.black87),
               ),
               const SizedBox(height: 32),
               Card(
