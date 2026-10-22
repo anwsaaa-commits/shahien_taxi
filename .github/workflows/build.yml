@@ -29,6 +29,13 @@ jobs:
         run: |
           flutter create . --org com.shahien.taxi --project-name shahien_taxi --no-pub
 
+      - name: Fix Android Manifest Location Permission
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' "$MANIFEST_PATH"
+          fi
+
       - name: Get Dependencies
         run: |
           flutter pub get
