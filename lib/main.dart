@@ -1,9 +1,9 @@
-Dart
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const gold = Color(0xFFFFC107);
@@ -43,13 +43,13 @@ class ShahienTaxiApp extends StatelessWidget {
 
 class TaxiSettings {
   static Future<Map<String, dynamic>> load() async {
-    final p = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     return {
-      'base': p.getDouble('baseFare') ?? 1000.0,
-      'rate': p.getDouble('perKmRate') ?? 500.0,
-      'driver': p.getString('driverName') ?? '',
-      'phone': p.getString('driverPhone') ?? '',
-      'taxi': p.getString('taxiNumber') ?? '',
+      'base': prefs.getDouble('baseFare') ?? 1000.0,
+      'rate': prefs.getDouble('perKmRate') ?? 500.0,
+      'driver': prefs.getString('driverName') ?? '',
+      'phone': prefs.getString('driverPhone') ?? '',
+      'taxi': prefs.getString('taxiNumber') ?? '',
     };
   }
 
@@ -60,12 +60,12 @@ class TaxiSettings {
     required String phone,
     required String taxi,
   }) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setDouble('baseFare', base);
-    await p.setDouble('perKmRate', rate);
-    await p.setString('driverName', driver);
-    await p.setString('driverPhone', phone);
-    await p.setString('taxiNumber', taxi);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('baseFare', base);
+    await prefs.setDouble('perKmRate', rate);
+    await prefs.setString('driverName', driver);
+    await prefs.setString('driverPhone', phone);
+    await prefs.setString('taxiNumber', taxi);
   }
 }
 
@@ -73,12 +73,12 @@ class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() =>
-      _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int index = 0;
+  int settingsRevision = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -87,18 +87,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: index,
         children: [
           HomeScreen(
+            key: ValueKey(settingsRevision),
             openSettings: () => setState(() => index = 1),
           ),
           SettingsScreen(
             onSettingsSaved: () {
-              setState(() {});
+              setState(() {
+                settingsRevision++;
+              });
             },
           ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: index,
-        onTap: (i) => setState(() => index = i),
+        onTap: (value) => setState(() => index = value),
         backgroundColor: bg,
         selectedItemColor: gold,
         unselectedItemColor: Colors.white54,
@@ -137,6 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final taxiController = TextEditingController();
 
   bool loading = true;
+  bool saving = false;
 
   @override
   void initState() {
@@ -168,6 +172,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    if (saving) return;
+
     final base = double.tryParse(baseController.text.trim());
     final rate = double.tryParse(rateController.text.trim());
 
@@ -180,20 +186,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    await TaxiSettings.save(
-      base: base,
-      rate: rate,
-      driver: driverController.text.trim(),
-      phone: phoneController.text.trim(),
-      taxi: taxiController.text.trim(),
-    );
+    setState(() => saving = true);
+    try {
+      await TaxiSettings.save(
+        base: base,
+        rate: rate,
+        driver: driverController.text.trim(),
+        phone: phoneController.text.trim(),
+        taxi: taxiController.text.trim(),
+      );
 
-    widget.onSettingsSaved();
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ الإعدادات بنجاح')),
-    );
+      widget.onSettingsSaved();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ الإعدادات بنجاح')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر حفظ الإعدادات. حاول مجددًا.')),
+      );
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
   }
 
   Widget _field(
@@ -244,19 +259,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _field('الأجرة الأساسية (ريال)', baseController,
-                    keyboard: TextInputType.number),
-                _field('سعر الكيلومتر (ريال)', rateController,
-                    keyboard: TextInputType.number),
+                _field(
+                  'الأجرة الأساسية (ريال)',
+                  baseController,
+                  keyboard: const TextInputType.numberWithOptions(decimal: true),
+                ),
+                _field(
+                  'سعر الكيلومتر (ريال)',
+                  rateController,
+                  keyboard: const TextInputType.numberWithOptions(decimal: true),
+                ),
                 _field('اسم السائق', driverController),
                 _field('رقم هاتف السائق', phoneController,
                     keyboard: TextInputType.phone),
                 _field('رقم التاكسي أو اللوحة', taxiController),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  onPressed: _save,
-                  icon: const Icon(Icons.save),
-                  label: const Text('حفظ الإعدادات'),
+                  onPressed: saving ? null : _save,
+                  icon: saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: gold,
                     foregroundColor: Colors.black,
@@ -273,7 +300,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
     );
   }
-}Dart
+}
+
 enum TripStatus { idle, running, paused }
 
 class HomeScreen extends StatefulWidget {
@@ -301,7 +329,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double distanceKm = 0;
   double fare = 0;
   double speed = 0;
-
   int elapsedSeconds = 0;
 
   Timer? timer;
@@ -309,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool locationReady = false;
   bool locating = false;
+  bool startingTrip = false;
   String? locationError;
 
   @override
@@ -325,48 +353,53 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       baseFare = data['base'] as double;
       perKmRate = data['rate'] as double;
-
-      if (status == TripStatus.idle) {
-        fare = 0;
-      } else {
-        fare = baseFare + distanceKm * perKmRate;
-      }
+      fare = status == TripStatus.idle
+          ? 0
+          : baseFare + distanceKm * perKmRate;
     });
   }
 
   Future<bool> _ensurePermission() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        if (mounted) {
+          setState(() => locationError = 'شغّل خدمة الموقع GPS من الهاتف');
+        }
+        return false;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied) {
+        if (mounted) setState(() => locationError = 'إذن الموقع مرفوض');
+        return false;
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          setState(() => locationError = 'فعّل إذن الموقع من إعدادات التطبيق');
+        }
+        return false;
+      }
+
+      return true;
+    } catch (_) {
       if (mounted) {
-        setState(() {
-          locationError = 'شغّل خدمة الموقع GPS من الهاتف';
-        });
+        setState(() => locationError = 'تعذّر التحقق من إذن الموقع');
       }
       return false;
     }
+  }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.denied) {
-      if (mounted) {
-        setState(() => locationError = 'إذن الموقع مرفوض');
-      }
-      return false;
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        setState(() {
-          locationError = 'فعّل إذن الموقع من إعدادات التطبيق';
-        });
-      }
-      return false;
-    }
-
-    return true;
+  Future<Position> _currentPosition() {
+    // صيغة متوافقة مع geolocator 10.x.
+    return Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 20),
+    );
   }
 
   Future<void> _getLocation() async {
@@ -379,27 +412,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       if (!await _ensurePermission()) return;
-
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
-
+      final pos = await _currentPosition();
       if (!mounted) return;
 
       currentLocation = LatLng(pos.latitude, pos.longitude);
       locationReady = true;
-
       setState(() {});
 
       try {
         mapController.move(currentLocation, 16);
       } catch (_) {
-        // قد لا يكون عنصر الخريطة قد اكتمل بناؤه بعد.
+        // قد لا تكون الخريطة جاهزة بعد.
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           locationError = 'تعذّر تحديد الموقع. تحقق من GPS والإنترنت.';
@@ -411,23 +436,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startTrip() async {
-    if (!await _ensurePermission()) {
-      if (mounted && locationError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(locationError!)),
-        );
-      }
-      return;
-    }
+    if (startingTrip || status != TripStatus.idle) return;
+    setState(() {
+      startingTrip = true;
+      locationError = null;
+    });
 
     try {
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
+      if (!await _ensurePermission()) {
+        if (mounted && locationError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(locationError!)),
+          );
+        }
+        return;
+      }
 
+      final pos = await _currentPosition();
       if (!mounted) return;
 
       currentLocation = LatLng(pos.latitude, pos.longitude);
@@ -451,24 +476,23 @@ class _HomeScreenState extends State<HomeScreen> {
           content: Text('تعذّر الحصول على موقع GPS لبدء المشوار'),
         ),
       );
+    } finally {
+      if (mounted) setState(() => startingTrip = false);
     }
   }
 
   void _startTimer() {
     timer?.cancel();
-
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || status != TripStatus.running) return;
-
-      setState(() {
-        elapsedSeconds++;
-      });
+      setState(() => elapsedSeconds++);
     });
   }
 
   void _startTracking() {
     positionStream?.cancel();
 
+    // صيغة getPositionStream الصحيحة في geolocator 10.x.
     positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -479,16 +503,17 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted || status != TripStatus.running) return;
 
         final next = LatLng(position.latitude, position.longitude);
+        final previous = lastTripPosition;
 
-        if (lastTripPosition != null) {
+        if (previous != null) {
           final meters = Geolocator.distanceBetween(
-            lastTripPosition!.latitude,
-            lastTripPosition!.longitude,
+            previous.latitude,
+            previous.longitude,
             next.latitude,
             next.longitude,
           );
 
-          // تجاهل الانجراف البسيط في GPS أثناء التوقف.
+          // تجاهل الحركة الصغيرة وانجراف GPS، وتجاهل القفزات الكبيرة.
           if (meters >= 3 && meters < 100) {
             distanceKm += meters / 1000.0;
           }
@@ -496,24 +521,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
         lastTripPosition = next;
         currentLocation = next;
-
-        if (position.speed >= 0) {
-          speed = position.speed * 3.6;
-        }
-
+        speed = position.speed >= 0 ? position.speed * 3.6 : 0;
         fare = baseFare + distanceKm * perKmRate;
 
         setState(() {});
-
         try {
           mapController.move(currentLocation, 16);
         } catch (_) {}
       },
       onError: (_) {
-        if (!mounted) return;
-        setState(() {
-          locationError = 'انقطع تحديث الموقع. تحقق من GPS.';
-        });
+        if (mounted) {
+          setState(() => locationError = 'انقطع تحديث الموقع. تحقق من GPS.');
+        }
       },
     );
   }
@@ -523,7 +542,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     timer?.cancel();
     timer = null;
-
     positionStream?.cancel();
     positionStream = null;
 
@@ -533,54 +551,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _resumeTrip() {
+  Future<void> _resumeTrip() async {
     if (status != TripStatus.paused) return;
 
-    setState(() {
-      status = TripStatus.running;
-    });
-
-    // إعادة أخذ الموقع لتجنب احتساب المسافة أثناء التوقف.
-    _refreshPositionForResume();
-  }
-
-  Future<void> _refreshPositionForResume() async {
-    if (!await _ensurePermission()) {
-      if (mounted) {
-        setState(() => status = TripStatus.paused);
-      }
-      return;
-    }
+    setState(() => locationError = null);
+    if (!await _ensurePermission()) return;
 
     try {
-      final p = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
+      final pos = await _currentPosition();
+      if (!mounted || status != TripStatus.paused) return;
 
-      if (!mounted || status != TripStatus.running) return;
-
-      currentLocation = LatLng(p.latitude, p.longitude);
+      currentLocation = LatLng(pos.latitude, pos.longitude);
       lastTripPosition = currentLocation;
 
+      setState(() {
+        status = TripStatus.running;
+        locationReady = true;
+      });
       _startTimer();
       _startTracking();
-
-      setState(() {});
     } catch (_) {
       if (!mounted) return;
-
       setState(() {
         status = TripStatus.paused;
         locationError = 'تعذّر استئناف GPS. حاول مجددًا.';
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تعذّر استئناف المشوار بسبب الموقع'),
-        ),
+        const SnackBar(content: Text('تعذّر استئناف المشوار بسبب الموقع')),
       );
     }
   }
@@ -590,16 +587,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     timer?.cancel();
     timer = null;
-
     await positionStream?.cancel();
     positionStream = null;
 
+    if (!mounted) return;
     setState(() {
       status = TripStatus.idle;
       speed = 0;
     });
-
-    if (!mounted) return;
     _showSummary();
   }
 
@@ -684,8 +679,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     timer?.cancel();
     positionStream?.cancel();
+    mapController.dispose();
     super.dispose();
-  }Dart
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -725,7 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-
             Positioned(
               top: 8,
               right: 12,
@@ -742,11 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(
-                              Icons.local_taxi,
-                              color: gold,
-                              size: 32,
-                            ),
+                            const Icon(Icons.local_taxi, color: gold, size: 32),
                             const SizedBox(width: 10),
                             const Expanded(
                               child: Column(
@@ -780,11 +772,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _stat('السرعة', '${speed.toStringAsFixed(0)} كم/س',
-                                Icons.speed),
-                            _stat('المسافة',
-                                '${distanceKm.toStringAsFixed(2)} كم',
-                                Icons.route),
+                            _stat(
+                              'السرعة',
+                              '${speed.toStringAsFixed(0)} كم/س',
+                              Icons.speed,
+                            ),
+                            _stat(
+                              'المسافة',
+                              '${distanceKm.toStringAsFixed(2)} كم',
+                              Icons.route,
+                            ),
                             _stat('الوقت', timeText, Icons.access_time),
                           ],
                         ),
@@ -840,7 +837,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
             Positioned(
               right: 16,
               top: 330,
@@ -848,7 +844,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 heroTag: 'locateTaxi',
                 backgroundColor: panel,
                 foregroundColor: gold,
-                onPressed: _getLocation,
+                onPressed: locating ? null : _getLocation,
                 child: locating
                     ? const SizedBox(
                         width: 20,
@@ -861,7 +857,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     : const Icon(Icons.my_location),
               ),
             ),
-
             if (locationError != null)
               Positioned(
                 top: 385,
@@ -880,7 +875,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-
             Positioned(
               bottom: 12,
               left: 12,
@@ -908,9 +902,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Icon(
-                          locationReady
-                              ? Icons.gps_fixed
-                              : Icons.gps_not_fixed,
+                          locationReady ? Icons.gps_fixed : Icons.gps_not_fixed,
                           color: locationReady
                               ? Colors.greenAccent
                               : Colors.orangeAccent,
@@ -920,10 +912,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
                     if (status == TripStatus.idle)
                       _actionButton(
-                        'ابدأ المشوار',
+                        startingTrip ? 'جارٍ تحديد الموقع...' : 'ابدأ المشوار',
                         Icons.play_circle_fill,
                         gold,
-                        _startTrip,
+                        startingTrip ? null : _startTrip,
                       )
                     else if (status == TripStatus.running)
                       Row(
@@ -985,9 +977,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: panel,
         title: const Text('إنهاء المشوار؟'),
-        content: const Text(
-          'سيتم إيقاف العدادات وعرض ملخص الرحلة.',
-        ),
+        content: const Text('سيتم إيقاف العدادات وعرض ملخص الرحلة.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -1023,10 +1013,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white60,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Colors.white60, fontSize: 11),
         ),
       ],
     );
@@ -1036,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String label,
     IconData icon,
     Color color,
-    VoidCallback onPressed,
+    VoidCallback? onPressed,
   ) {
     return SizedBox(
       height: 54,
@@ -1052,6 +1039,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
+          disabledBackgroundColor: color.withOpacity(0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
